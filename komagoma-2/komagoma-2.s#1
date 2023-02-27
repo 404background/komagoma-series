@@ -5861,7 +5861,7 @@ Warning: This is the KIT version of the AXIAL-0.3 package. This package has a sm
 <classes>
 <class number="0" name="default" width="0.15" drill="0">
 </class>
-<class number="2" name="battery" width="0.6" drill="0">
+<class number="2" name="battery" width="0.5" drill="0">
 </class>
 <class number="3" name="VM" width="0.4" drill="0">
 </class>
