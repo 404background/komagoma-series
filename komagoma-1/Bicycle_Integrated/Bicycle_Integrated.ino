@@ -1,3 +1,4 @@
+//コマゴマ一号　パソコンから無線で操作時
 #include <SoftwareSerial.h>
 #include<Wire.h>
 #include "SR04.h"

@@ -1,3 +1,4 @@
+//コマゴマ一号　自動走行時
 #include <SoftwareSerial.h>
 #include<Wire.h>
 #include "SR04.h"
