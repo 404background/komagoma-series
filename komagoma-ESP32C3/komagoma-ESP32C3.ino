@@ -80,6 +80,7 @@ void setup() {
 
   strip.begin();
   strip.setBrightness(20);
+  strip.setLedColor(0, 255, 0, 0);
 
   BNO055_setup();
   BLEDevice::init("MyESP32");
@@ -96,7 +97,6 @@ void setup() {
   BLEAdvertising *pAdvertising = pServer->getAdvertising();
   pAdvertising->start();
   xTaskCreatePinnedToCore(subProcess, "subProcess", 4096, NULL, 1, NULL, 0); //Core 0でタスク開始
-  strip.setLedColor(0, 255, 0, 0);
   delay(1000);
   strip.setLedColor(0, 0, 255, 0);
 }
@@ -121,20 +121,19 @@ void loop() {
         }
       }
       break;
-    case 'w':
+    case '8':
       Move('w');
       break;
-    case 's':
+    case '5':
       Move(' ');
-      strip.setLedColor(0, 255, 0, 0);
       break;
-    case 'b':
+    case '2':
       Move('s');
       break;
-    case 'r':
+    case '6':
       Move('d');
       break;
-    case 'l':
+    case '4':
       Move('a');
       break;
     /*Check battery voltage****************************************************************************/

@@ -3,5 +3,7 @@
 
 void BNO055_setup();
 void BNO055();
+int printEvent(sensors_event_t* event);
+//void printEvent();
 
 #endif
