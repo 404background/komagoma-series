@@ -1,6 +1,7 @@
 //A0:バッテリー電圧確認用（https://wiki.seeedstudio.com/XIAO_ESP32C3_Getting_Started/）
 
 #include "BNO055.h"
+#include "Freenove_WS2812_Lib_for_ESP32.h"
 #include "SoftwareSerial.h"
 #include <BLEDevice.h>
 #include <BLEUtils.h>
@@ -8,6 +9,13 @@
 
 #define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+
+#define LEDS_COUNT  8
+#define LEDS_PIN  8
+#define CHANNEL   0
+
+Freenove_ESP32_WS2812 strip = Freenove_ESP32_WS2812(LEDS_COUNT, LEDS_PIN, CHANNEL, TYPE_GRB);
+//esp_err_t setLedColor(int index, uint8_t r, uint8_t g, uint8_t b);
 
 String command = "";
 
@@ -19,7 +27,7 @@ int PWMA = D9;     // 1つ目のDCモーターの回転速度
 int PWMB = D10;     // 2つ目のDCモーターの回転速度
 int LED = D8;
 
-char cmd;     //for switch-case
+volatile char cmd;     //for switch-case
 uint32_t Vbatt = 0;
 float Vbattf = 0;
 
@@ -43,7 +51,16 @@ class MyCallbacks: public BLECharacteristicCallbacks {
 
 SoftwareSerial mySerial;
 
-
+void subProcess(void * pvParameters) {
+  Serial.begin(115200);
+  while (1) {
+    while (1) {
+      if (Serial.available()) {
+        cmd = Serial.read();
+      }
+    }
+  }
+};
 
 void setup() {
   Serial.begin(115200);
@@ -61,6 +78,9 @@ void setup() {
   digitalWrite(LED, HIGH);
   //Speed(100);               //モーターの速度設定（0～255）
 
+  strip.begin();
+  strip.setBrightness(20);
+
   BNO055_setup();
   BLEDevice::init("MyESP32");
   BLEServer *pServer = BLEDevice::createServer();
@@ -75,6 +95,10 @@ void setup() {
   pService->start();
   BLEAdvertising *pAdvertising = pServer->getAdvertising();
   pAdvertising->start();
+  xTaskCreatePinnedToCore(subProcess, "subProcess", 4096, NULL, 1, NULL, 0); //Core 0でタスク開始
+  strip.setLedColor(0, 255, 0, 0);
+  delay(1000);
+  strip.setLedColor(0, 0, 255, 0);
 }
 
 void loop() {
@@ -87,16 +111,32 @@ void loop() {
 
   switch (cmd) {
     case '1':
-      BNO055();
-      break;
-
-
-    /*
-      if (Serial.available()) {
-      cmd = Serial.read();
-      Move(cmd);
+      while (cmd == '1') {
+        for (int j = 0; j < 255; j += 2) {
+          for (int i = 0; i < LEDS_COUNT; i++) {
+            strip.setLedColorData(i, strip.Wheel((i * 256 / LEDS_COUNT + j) & 255));
+          }
+          strip.show();
+          delay(10);
+        }
       }
-    */
+      break;
+    case 'w':
+      Move('w');
+      break;
+    case 's':
+      Move(' ');
+      strip.setLedColor(0, 255, 0, 0);
+      break;
+    case 'b':
+      Move('s');
+      break;
+    case 'r':
+      Move('d');
+      break;
+    case 'l':
+      Move('a');
+      break;
     /*Check battery voltage****************************************************************************/
     case '0':
       for (int i = 0; i < 16; i++) {
@@ -104,10 +144,10 @@ void loop() {
       }
       Vbattf = 2 * Vbatt / 16 / 1000.0;     // attenuation ratio 1/2, mV --> V
       Serial.println(Vbattf, 3);
-      mySerial.println(Vbattf, 3);
+      cmd = ' ';
       break;
-    default:
-      delay(100);
+      //default:
+      //strip.setAllLedsColor(0);
   }
 }
 
@@ -125,35 +165,30 @@ void Move(int i) {
       digitalWrite(AIN2, LOW);
       digitalWrite(BIN1, LOW);
       digitalWrite(BIN2, LOW);
-      delay(1000);
       break;
     case 'd': // 右回転
       digitalWrite(AIN1, HIGH);
       digitalWrite(AIN2, LOW);
       digitalWrite(BIN1, HIGH);
       digitalWrite(BIN2, LOW);
-      delay(1000);
       break;
     case 'a': // 左回転
       digitalWrite(AIN1, LOW);
       digitalWrite(AIN2, HIGH);
       digitalWrite(BIN1, LOW);
       digitalWrite(BIN2, HIGH);
-      delay(1000);
       break;
     case 'w': // 前進
-      digitalWrite(AIN1, HIGH);
-      digitalWrite(AIN2, LOW);
-      digitalWrite(BIN1, LOW);
-      digitalWrite(BIN2, HIGH);
-      delay(1000);
-      break;
-    case 's': // 後進
       digitalWrite(AIN1, LOW);
       digitalWrite(AIN2, HIGH);
       digitalWrite(BIN1, HIGH);
       digitalWrite(BIN2, LOW);
-      delay(1000);
+      break;
+    case 's': // 後進
+      digitalWrite(AIN1, HIGH);
+      digitalWrite(AIN2, LOW);
+      digitalWrite(BIN1, LOW);
+      digitalWrite(BIN2, HIGH);
       break;
   }
 }
